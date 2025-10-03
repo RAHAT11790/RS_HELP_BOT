@@ -22,7 +22,7 @@ cur.execute("""CREATE TABLE IF NOT EXISTS keywords (
 )""")
 conn.commit()
 
-ADMINS = {6621572366, 8350605421}  # Admin IDs
+ADMINS = {6621572366, 8350605421, -1002892874648}  # Admin IDs
 
 # ===== /add command =====
 @bot.message_handler(commands=["add"])
