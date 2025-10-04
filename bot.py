@@ -10,17 +10,23 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")  # Environment variable preferred
 bot = telebot.TeleBot(BOT_TOKEN)
 
 # ===== Database setup =====
-conn = sqlite3.connect("keywords.db", check_same_thread=False)
-cur = conn.cursor()
-cur.execute("""CREATE TABLE IF NOT EXISTS keywords (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    keyword TEXT UNIQUE,
-    response TEXT,
-    file_id TEXT,
-    button_text TEXT,
-    button_url TEXT
-)""")
-conn.commit()
+def db_connect():
+    return sqlite3.connect("keywords.db", check_same_thread=False)
+
+def setup_database():
+    with db_connect() as conn:
+        cur = conn.cursor()
+        cur.execute("""CREATE TABLE IF NOT EXISTS keywords (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            keyword TEXT UNIQUE,
+            response TEXT,
+            file_id TEXT,
+            button_text TEXT,
+            button_url TEXT
+        )""")
+        conn.commit()
+
+setup_database()
 
 ADMINS = {6621572366, 8350605421, -1002892874648}  # Admin IDs
 
@@ -56,11 +62,16 @@ def add_keyword(message):
                 file_id = message.reply_to_message.photo[-1].file_id
             elif message.reply_to_message.document:
                 file_id = message.reply_to_message.document.file_id
-        cur.execute("DELETE FROM keywords WHERE keyword = ?", (kw,))
-        cur.execute("INSERT INTO keywords (keyword, response, file_id, button_text, button_url) VALUES (?, ?, ?, ?, ?)",
-                    (kw, response, file_id, button_text, button_url))
-        conn.commit()
+        
+        with db_connect() as conn:
+            cur = conn.cursor()
+            cur.execute("DELETE FROM keywords WHERE keyword = ?", (kw,))
+            cur.execute("INSERT INTO keywords (keyword, response, file_id, button_text, button_url) VALUES (?, ?, ?, ?, ?)",
+                        (kw, response, file_id, button_text, button_url))
+            conn.commit()
+        
         added_keywords.append(kw)
+
     if added_keywords:
         reply_text = "✅ নিচের keyword(s) সেভ হয়েছে:\n"
         for k in added_keywords:
@@ -75,11 +86,15 @@ def list_keywords(message):
     if message.from_user.id not in ADMINS:
         bot.reply_to(message, "❌ শুধু অ্যাডমিন ব্যবহার করতে পারবে।")
         return
-    cur.execute("SELECT keyword FROM keywords ORDER BY id DESC")
-    rows = cur.fetchall()
+    with db_connect() as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT keyword FROM keywords ORDER BY id DESC")
+        rows = cur.fetchall()
+    
     if not rows:
         bot.reply_to(message, "📂 কোনো keyword নেই।")
         return
+    
     msg = "📑 Saved Keywords:\n\n"
     for i, (kw,) in enumerate(rows, start=1):
         msg += f"{i}. {kw}\n"
@@ -95,8 +110,12 @@ def delete_keyword(message):
     if not keyword:
         bot.reply_to(message, "⚠️ ব্যবহার: /del <keyword>")
         return
-    cur.execute("DELETE FROM keywords WHERE keyword = ?", (keyword,))
-    conn.commit()
+    
+    with db_connect() as conn:
+        cur = conn.cursor()
+        cur.execute("DELETE FROM keywords WHERE keyword = ?", (keyword,))
+        conn.commit()
+        
     bot.reply_to(message, f"🗑️ Keyword মুছে দেওয়া হলো: {keyword}")
 
 # ===== Group message check =====
@@ -105,8 +124,12 @@ def check_keyword(message):
     if not message.text:
         return
     text = message.text
-    cur.execute("SELECT keyword, response, file_id, button_text, button_url FROM keywords")
-    rows = cur.fetchall()
+    
+    with db_connect() as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT keyword, response, file_id, button_text, button_url FROM keywords")
+        rows = cur.fetchall()
+    
     for kw, res, f_id, btn_text, btn_url in rows:
         pattern = r'\b' + re.escape(kw) + r'\b'
         if re.search(pattern, text, re.IGNORECASE):
