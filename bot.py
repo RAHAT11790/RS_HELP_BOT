@@ -35,7 +35,7 @@ ADMIN_IDS = load_json(ADMIN_FILE, [6621572366])  # ডিফল্ট এডম�
 
 # ------------------- বট সেটআপ -------------------
 
-BOT_TOKEN = "8437757573:AAHz-hT0E6pzIzJpkL3rtzLVR5oihqsbWhk"
+BOT_TOKEN = "8437757573:AAEsIZdXM_OnvQOWepbqgSsPtLZqu0rjP8k"
 
 WELCOME_TEMPLATE = """🔥 𝗪𝗘𝗟𝗖𝗢𝗠𝗘 𓆩{mention}𓆪 🔥
 ━━━━━━━━━━━━━━━━━━━
